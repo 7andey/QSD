@@ -1,51 +1,57 @@
 import numpy as np
 import math
 
+# Function to generate binary values
 def generate_binary_values(num_values):
     binary_values = []
     for i in range(1, num_values + 1):  # Start from 1 instead of 0
         binary_values.append(bin(i)[2:])  # Convert integer to binary string and remove '0b' prefix
     return binary_values
 
+# Function to create qubit matrices and qubit dictionary
 def qubit_matrix(binary_values, num_qs):
     matrix = []
     qubit_dict = {}
     for idx, binary_str in enumerate(binary_values):
-        binary_list = list(map(int, binary_str.zfill(num_qs)))
+        binary_list = list(map(int, binary_str.zfill(num_qs)))  # Pad with zeros to match num_qs
         matrix.append(binary_list)
-        qubit_dict[f'T{idx + 1}'] = binary_str.zfill(num_qs)
+        qubit_dict[f'T{idx + 1}'] = binary_str.zfill(num_qs)  # Add qubit name to dictionary
     return np.array(matrix), qubit_dict
 
+# Function to initialize qubit matrices based on the qubit dictionary
 def create_qubit_matrices(qubit_dict, num_qs):
     qubit_matrices = {}
     for key, value in qubit_dict.items():
         matrix = np.zeros((2 ** num_qs, 1), dtype=int)
-        index = int(value, 2)
-        matrix[index][0] = 1
-        qubit_matrices[key] = matrix
+        index = int(value, 2)  # Convert binary string to integer
+        matrix[index][0] = 1  # Set the corresponding element to 1
+        qubit_matrices[key] = matrix  # Add qubit matrix to dictionary
     return qubit_matrices
 
+# Function to compute the density matrix from a ket vector
 def compute_density_matrix(ket_vector):
     return np.outer(ket_vector, np.conj(ket_vector).T)
 
+# Function to check if the stack is empty
 def check_empty(stack):
     return np.array_equal(stack, np.array([[1]]))  # Check if the stack is equal to the identity matrix
 
+# Function to push a qubit density matrix into the stack
 def push_operation(stack, qubit_density_matrix):
-    composite_system = np.kron(stack, qubit_density_matrix)
+    composite_system = np.kron(stack, qubit_density_matrix)  # Kronecker product
     return composite_system
 
-        
+# Function to retrieve the top element (last pushed qubit) from the stack
 def get_top(stack, qubit_matrices):
     if check_empty(stack):
         print("Stack is empty. There are no elements.")
     else:
-        last_qubit = list(qubit_matrices.keys())[-1]
-        last_qubit_density_matrix = stack[-1]
+        last_qubit = list(qubit_matrices.keys())[-1]  # Get the name of the last pushed qubit
+        last_qubit_density_matrix = stack[-1]  # Retrieve the top element from the stack
         print(f"Top Element ({last_qubit})")
-       
         
-        
+
+# Function to calculate and print the size of the stack
 def get_size(stack, qubit_matrices):
     if check_empty(stack):
         print("Size of the stack: 0")
@@ -57,6 +63,7 @@ def get_size(stack, qubit_matrices):
         size = math.log(k, d)  # Log k to the base d
         print(f"Size of the stack: {size}")
 
+# Function to pop the top element from the stack
 def pop_operation(stack, qubit_matrices, initialized):
     if not initialized:
         print("Error: Stack is not initialized. Please push elements into the stack first.")
@@ -65,15 +72,16 @@ def pop_operation(stack, qubit_matrices, initialized):
         print("Error: Stack underflow. There are no elements to pop.")
         return stack, initialized
     else:
-        last_qubit = list(qubit_matrices.keys())[-1]
-        density_matrix_to_remove = qubit_matrices[last_qubit]
-        stack_dimension = stack.shape[0]
-        top_dimension = density_matrix_to_remove.shape[0]
+        last_qubit = list(qubit_matrices.keys())[-1]  # Get the name of the last pushed qubit
+        density_matrix_to_remove = qubit_matrices[last_qubit]  # Get the density matrix to remove
+        stack_dimension = stack.shape[0]  # Number of rows in the stack matrix
+        top_dimension = density_matrix_to_remove.shape[0]  # Dimension of the top element
         if stack_dimension % top_dimension != 0:
             print("Error: Incompatible dimensions for popping.")
             return stack, initialized
         else:
-            rows_to_keep = stack_dimension // top_dimension
+            rows_to_keep = stack_dimension // top_dimension  # Calculate the number of rows to keep
+            # Perform partial trace to remove the top element
             updated_stack = np.trace(np.reshape(stack, (rows_to_keep, top_dimension, rows_to_keep, top_dimension)), axis1=1, axis2=3)
             print("Top element popped from the stack.")
             print("Updated Composite System:")
@@ -99,18 +107,19 @@ while True:
 print("Enter the number of states required:", number)
 num_qs = 2
 
+# Generate binary values and create qubit matrices
 binary_values = generate_binary_values(number)
-print(binary_values)
 qubit_matrix, qubit_dict = qubit_matrix(binary_values, num_qs)
 qubit_matrices = create_qubit_matrices(qubit_dict, num_qs)
 
+# Print qubit matrices and density matrices
 print("Qubit Matrices:")
 for key, matrix in qubit_matrices.items():
     print(f"{key}:")
     print(matrix)
     density_matrix = compute_density_matrix(matrix)
     qubit_matrices[key] = density_matrix  # Replace ket vectors with density matrices
-    print(f"Density Matrix for P{int(key[1:])}:")  # Extracting the number from key
+    print(f"Density Matrix for {key}:")  # Print density matrices with qubit names
     print(density_matrix)
     print()
 
